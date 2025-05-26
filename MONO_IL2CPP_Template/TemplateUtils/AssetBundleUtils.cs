@@ -16,7 +16,7 @@ namespace MONO_IL2CPP_Template.TemplateUtils
 #if IL2CPP
             try
             {
-                Stream bundleStream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.launderers.assetbundle");
+                Stream bundleStream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.{bundleFileName}");
                 if (bundleStream == null)
                 {
                     mod.Unregister($"AssetBundle stream not found");
@@ -39,7 +39,7 @@ namespace MONO_IL2CPP_Template.TemplateUtils
 #elif MONO
             try
             {
-                var stream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.launderers.assetbundle");
+                var stream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.{bundleFileName}");
 
                 if (stream == null)
                 {
