@@ -7,21 +7,25 @@ namespace MONO_IL2CPP_Template.TemplateUtils
     {
         static Core mod = MelonAssembly.FindMelonInstance<Core>();
         static MelonAssembly melonAssembly = mod.MelonAssembly;
+
+        public static
 #if IL2CPP
-        public static Il2CppAssetBundle LoadAssetBundle(string bundleFileName)
+            Il2CppAssetBundle
 #elif MONO
-        public static AssetBundle LoadAssetBundle(string bundleFileName)
+            AssetBundle
 #endif
+            LoadAssetBundle(string bundleFileName)
         {
-#if IL2CPP
             try
             {
-                Stream bundleStream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.{bundleFileName}");
+                string streamPath = $"{typeof(Core).Namespace}.Assets.{bundleFileName}";
+                Stream bundleStream = melonAssembly.Assembly.GetManifestResourceStream($"{streamPath}");
                 if (bundleStream == null)
                 {
-                    mod.Unregister($"AssetBundle stream not found");
+                    mod.Unregister($"AssetBundle: '{streamPath}' not found. \nOpen .csproj file and search for '{bundleFileName}'.\nIf it doesn't exist,\nCopy your asset to Assets/ folder then look for 'your.assetbundle' in .csproj file.");
                     return null;
                 }
+#if IL2CPP
                 byte[] bundleData;
                 using (MemoryStream ms = new MemoryStream())
                 {
@@ -30,31 +34,15 @@ namespace MONO_IL2CPP_Template.TemplateUtils
                 }
                 Il2CppSystem.IO.Stream stream = new Il2CppSystem.IO.MemoryStream(bundleData);
                 return Il2CppAssetBundleManager.LoadFromStream(stream);
-            }
-            catch (Exception e)
-            {
-                mod.Unregister($"Failed to load AssetBundle. Please report to dev: {e}");
-                return null;
-            }
 #elif MONO
-            try
-            {
-                var stream = melonAssembly.Assembly.GetManifestResourceStream($"{typeof(Core).Namespace}.Assets.{bundleFileName}");
-
-                if (stream == null)
-                {
-
-                    mod.Unregister($"AssetBundle stream not found");
-                    return null;
-                }
-                return AssetBundle.LoadFromStream(stream);
+                return AssetBundle.LoadFromStream(bundleStream);
+#endif
             }
             catch (Exception e)
             {
                 mod.Unregister($"Failed to load AssetBundle. Please report to dev: {e}");
                 return null;
             }
-#endif
         }
 
         public static
@@ -71,18 +59,30 @@ namespace MONO_IL2CPP_Template.TemplateUtils
 #elif MONO
             AssetBundle[] loadedBundles = AssetBundle.GetAllLoadedAssetBundles().ToArray();
 #endif
-            if (loadedBundles.Length == 1) return loadedBundles[0];
             try
             {
                 foreach (var bundle in loadedBundles)
                 {
                     if (bundle.Contains(asset_name_flag)) return bundle;
                 }
-                throw new Exception($"Asset '{asset_name_flag}' not found in {loadedBundles.Length} bundle(s)");
+                string assetNames = "";
+                foreach (var bundle in loadedBundles)
+                {
+                    string[] bundleAssetNames = bundle.GetAllAssetNames();
+                    string bundleAssetNamesString = string.Join("\n\r -", bundleAssetNames);
+                    assetNames +=
+#if IL2CPP
+                        bundle
+#elif MONO
+                        bundle.name
+#endif
+                        + $"({bundleAssetNames.Length} assets):" + bundleAssetNamesString;
+                }
+                throw new Exception($"Asset '{asset_name_flag}' not found in {loadedBundles.Length} bundle(s).\n{assetNames}");
             }
             catch (Exception e)
             {
-                mod.Unregister($"Failed to get loaded AssetBundle. Please report to dev: {e}");
+                mod.Unregister($"Failed to get loaded AssetBundle. Please report to dev: \n{e}");
                 return null;
             }
 
